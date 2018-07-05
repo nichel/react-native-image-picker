@@ -19,6 +19,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.util.Patterns;
 import android.webkit.MimeTypeMap;
 import android.content.pm.PackageManager;
@@ -73,7 +74,10 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   private ReadableMap options;
   protected Uri cameraCaptureURI;
   private Boolean noData = false;
+
   private Boolean pickVideo = false;
+  private Boolean pickImage = false;
+
   private ImageConfig imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false);
 
   @Deprecated
@@ -714,10 +718,22 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       noData = options.getBoolean("noData");
     }
     imageConfig = imageConfig.updateFromOptions(options);
+
     pickVideo = false;
-    if (options.hasKey("mediaType") && options.getString("mediaType").equals("video")) {
+    if (options.hasKey("mediaType") && options.getString("mediaType").equals("video"))  {
       pickVideo = true;
     }
+
+    pickImage = false;
+    if (options.hasKey("mediaType") && options.getString("mediaType").equals("image")) {
+      pickImage = true;
+    }
+
+    if (options.hasKey("mediaType") && options.getString("mediaType").equals("mixed")) {
+      pickVideo = true;
+      pickImage = true;
+    }
+
     videoQuality = 1;
     if (options.hasKey("videoQuality") && options.getString("videoQuality").equals("low")) {
       videoQuality = 0;
