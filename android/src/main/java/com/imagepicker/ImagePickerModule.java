@@ -378,10 +378,10 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   @Override
   public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
     //robustness code
-    if (passResult(requestCode))
-    {
-      return;
-    }
+    // if (passResult(requestCode))
+    // {
+    //   return;
+    // }
 
     responseHelper.cleanResponse();
 
