@@ -19,7 +19,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 import android.util.Patterns;
 import android.webkit.MimeTypeMap;
 import android.content.pm.PackageManager;
@@ -62,8 +61,13 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
 
   public static final int REQUEST_LAUNCH_IMAGE_CAPTURE    = 13001;
   public static final int REQUEST_LAUNCH_IMAGE_LIBRARY    = 13002;
+
   public static final int REQUEST_LAUNCH_VIDEO_LIBRARY    = 13003;
   public static final int REQUEST_LAUNCH_VIDEO_CAPTURE    = 13004;
+
+  public static final int REQUEST_LAUNCH_MIXED_LIBRARY    = 13005;
+  public static final int REQUEST_LAUNCH_MIXED_CAPTURE    = 13006;
+
   public static final int REQUEST_PERMISSIONS_FOR_CAMERA  = 14001;
   public static final int REQUEST_PERMISSIONS_FOR_LIBRARY = 14002;
 
@@ -327,17 +331,29 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
 
     int requestCode;
     Intent libraryIntent;
-    if (pickVideo)
+    if (pickVideo && !pickImage)
     {
       requestCode = REQUEST_LAUNCH_VIDEO_LIBRARY;
       libraryIntent = new Intent(Intent.ACTION_PICK);
       libraryIntent.setType("video/*");
     }
-    else
+    else if (pickImage && !pickVideo)
     {
       requestCode = REQUEST_LAUNCH_IMAGE_LIBRARY;
       libraryIntent = new Intent(Intent.ACTION_PICK,
       MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+    } else {
+      requestCode = REQUEST_LAUNCH_MIXED_LIBRARY;
+
+      final Intent getContent = new Intent(Intent.ACTION_GET_CONTENT);
+      getContent.setType("*/*");
+      getContent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+      getContent.addCategory(Intent.CATEGORY_OPENABLE);
+
+      final String[] mimeTypes = new String[] {"image/*","video/*"};
+      getContent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+
+      libraryIntent = Intent.createChooser(getContent, "Pick an image");
     }
 
     if (libraryIntent.resolveActivity(reactContext.getPackageManager()) == null)
@@ -720,17 +736,12 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     imageConfig = imageConfig.updateFromOptions(options);
 
     pickVideo = false;
-    if (options.hasKey("mediaType") && options.getString("mediaType").equals("video"))  {
+    if (options.hasKey("mediaType") && options.getString("mediaType").equals("video")) {
       pickVideo = true;
     }
 
     pickImage = false;
     if (options.hasKey("mediaType") && options.getString("mediaType").equals("image")) {
-      pickImage = true;
-    }
-
-    if (options.hasKey("mediaType") && options.getString("mediaType").equals("mixed")) {
-      pickVideo = true;
       pickImage = true;
     }
 
