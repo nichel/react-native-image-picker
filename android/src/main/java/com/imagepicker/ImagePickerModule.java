@@ -19,6 +19,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.util.Patterns;
 import android.webkit.MimeTypeMap;
 import android.content.pm.PackageManager;
@@ -337,7 +338,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       libraryIntent = new Intent(Intent.ACTION_PICK);
       libraryIntent.setType("video/*");
     }
-    else if (pickImage && !pickVideo)
+    else if (!pickVideo && pickImage)
     {
       requestCode = REQUEST_LAUNCH_IMAGE_LIBRARY;
       libraryIntent = new Intent(Intent.ACTION_PICK,
@@ -345,15 +346,15 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     } else {
       requestCode = REQUEST_LAUNCH_MIXED_LIBRARY;
 
-      final Intent getContent = new Intent(Intent.ACTION_GET_CONTENT);
-      getContent.setType("*/*");
-      getContent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-      getContent.addCategory(Intent.CATEGORY_OPENABLE);
+      libraryIntent = new Intent(Intent.ACTION_GET_CONTENT);
+      libraryIntent.setType("*/*");
+      libraryIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+      libraryIntent.addCategory(Intent.CATEGORY_OPENABLE);
 
       final String[] mimeTypes = new String[] {"image/*","video/*"};
-      getContent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+      libraryIntent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
 
-      libraryIntent = Intent.createChooser(getContent, "Pick an image");
+//      libraryIntent = Intent.createChooser(getContent, "Pick an image");
     }
 
     if (libraryIntent.resolveActivity(reactContext.getPackageManager()) == null)
@@ -378,10 +379,10 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   @Override
   public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
     //robustness code
-    // if (passResult(requestCode))
-    // {
-    //   return;
-    // }
+    if (passResult(requestCode))
+    {
+      return;
+    }
 
     responseHelper.cleanResponse();
 
@@ -397,11 +398,28 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     Uri uri = null;
     switch (requestCode)
     {
+      case REQUEST_LAUNCH_MIXED_LIBRARY: {
+        final Uri dataUri = data.getData();
+        if (dataUri != null) {
+          final String type = getContext().getContentResolver().getType(dataUri);
+
+          if (type != null) {
+            if (type.startsWith("image")) {
+              this.onActivityResult(activity, REQUEST_LAUNCH_IMAGE_LIBRARY, resultCode, data);
+            } else if (type.startsWith("video")) {
+              this.onActivityResult(activity, REQUEST_LAUNCH_VIDEO_LIBRARY, resultCode, data);
+            }
+          }
+        }
+
+        return;
+      }
+
       case REQUEST_LAUNCH_IMAGE_CAPTURE:
         uri = cameraCaptureURI;
         break;
 
-      case REQUEST_LAUNCH_IMAGE_LIBRARY:
+        case REQUEST_LAUNCH_IMAGE_LIBRARY:
         uri = data.getData();
         String realPath = getRealPathFromURI(uri);
         final boolean isUrl = !TextUtils.isEmpty(realPath) &&
@@ -541,7 +559,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   {
     return callback == null || (cameraCaptureURI == null && requestCode == REQUEST_LAUNCH_IMAGE_CAPTURE)
             || (requestCode != REQUEST_LAUNCH_IMAGE_CAPTURE && requestCode != REQUEST_LAUNCH_IMAGE_LIBRARY
-            && requestCode != REQUEST_LAUNCH_VIDEO_LIBRARY && requestCode != REQUEST_LAUNCH_VIDEO_CAPTURE);
+            && requestCode != REQUEST_LAUNCH_VIDEO_LIBRARY && requestCode != REQUEST_LAUNCH_VIDEO_CAPTURE && requestCode != REQUEST_LAUNCH_MIXED_LIBRARY && requestCode != REQUEST_LAUNCH_MIXED_CAPTURE);
   }
 
   private void updatedResultResponse(@Nullable final Uri uri,
@@ -736,12 +754,17 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     imageConfig = imageConfig.updateFromOptions(options);
 
     pickVideo = false;
-    if (options.hasKey("mediaType") && options.getString("mediaType").equals("video")) {
+    if (options.hasKey("mediaType") && options.getString("mediaType").equals("video"))  {
       pickVideo = true;
     }
 
     pickImage = false;
-    if (options.hasKey("mediaType") && options.getString("mediaType").equals("image")) {
+    if (options.hasKey("mediaType") && options.getString("mediaType").equals("photo")) {
+      pickImage = true;
+    }
+
+    if (options.hasKey("mediaType") && options.getString("mediaType").equals("mixed")) {
+      pickVideo = true;
       pickImage = true;
     }
 
