@@ -346,13 +346,14 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     } else {
       requestCode = REQUEST_LAUNCH_MIXED_LIBRARY;
 
-      libraryIntent = new Intent(Intent.ACTION_GET_CONTENT);
+      libraryIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
       libraryIntent.setType("*/*");
       libraryIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
       libraryIntent.addCategory(Intent.CATEGORY_OPENABLE);
 
       final String[] mimeTypes = new String[] {"image/*","video/*"};
       libraryIntent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+      libraryIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
 
 //      libraryIntent = Intent.createChooser(getContent, "Pick an image");
     }
