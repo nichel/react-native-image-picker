@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
 import android.graphics.BitmapFactory;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
@@ -446,14 +447,25 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         imageConfig = imageConfig.withOriginalFile(new File(realPath));
         break;
 
-      case REQUEST_LAUNCH_VIDEO_LIBRARY:
+      case REQUEST_LAUNCH_VIDEO_LIBRARY: {
+        final MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(this.reactContext, data.getData());
+        final int duration = Integer.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+        responseHelper.putInt("duration", duration);
+
         responseHelper.putString("uri", data.getData().toString());
         responseHelper.putString("path", getRealPathFromURI(data.getData()));
         responseHelper.invokeResponse(callback);
         callback = null;
         return;
+      }
 
-      case REQUEST_LAUNCH_VIDEO_CAPTURE:
+      case REQUEST_LAUNCH_VIDEO_CAPTURE: {
+        final MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(this.reactContext, data.getData());
+        final int duration = Integer.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+        responseHelper.putInt("duration", duration);
+
         final String path = getRealPathFromURI(data.getData());
         responseHelper.putString("uri", data.getData().toString());
         responseHelper.putString("path", path);
@@ -461,6 +473,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         responseHelper.invokeResponse(callback);
         callback = null;
         return;
+      }
     }
 
     final ReadExifResult result = readExifInterface(responseHelper, imageConfig);
