@@ -458,6 +458,12 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
                 }
             }
 
+            AVURLAsset *sourceAsset = [AVURLAsset URLAssetWithURL:videoDestinationURL options:nil];
+            CMTime assetDuration = sourceAsset.duration;
+            Float64 duration = CMTimeGetSeconds(assetDuration);
+
+            [self.response setObject:[NSNumber numberWithFloat:duration * 1000] forKey:@"duration"];
+
             [self.response setObject:videoDestinationURL.absoluteString forKey:@"uri"];
             if (videoRefURL.absoluteString) {
                 [self.response setObject:videoRefURL.absoluteString forKey:@"origURL"];
